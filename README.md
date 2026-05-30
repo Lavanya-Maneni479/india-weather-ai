@@ -7,7 +7,6 @@ and Streamlit.
 
 ## 🚀 Live Demo
 [https://india-weather-ai-2026.streamlit.app/]
-(Add Streamlit URL after deployment)
 
 ## ✨ Features
 - 🌡️ Live weather for 30+ Indian cities
