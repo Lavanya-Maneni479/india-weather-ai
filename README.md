@@ -6,7 +6,7 @@ platform for India built with Python
 and Streamlit.
 
 ## 🚀 Live Demo
-[Click here to use the app]
+[https://india-weather-ai-2026.streamlit.app/]
 (Add Streamlit URL after deployment)
 
 ## ✨ Features
@@ -33,4 +33,4 @@ and Streamlit.
 
 ## 👩‍💻 Made by
 Sai Lavanya Maneni | Data Scientist
-GitHub: github.com/Lavanya-Maneni479
+GitHub: https://github.com/Lavanya-Maneni479
