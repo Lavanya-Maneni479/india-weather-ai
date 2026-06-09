@@ -579,11 +579,14 @@ st.sidebar.markdown("""
 **About this app:**
 - Live weather data
 - Super El Nino analysis
-- Crop recommendations  
+- ML weather prediction
+- Interactive India map
+- Crop recommendations
 - Health precautions
 - Vacation planning
 - AI weather chatbot
 
+**ML Model:** Random Forest
 **Data:** OpenWeatherMap API
 **Made by:** Lavanya Maneni
 **Year:** 2026
