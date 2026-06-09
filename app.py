@@ -6,6 +6,9 @@ import seaborn as sns
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime
+from ml_model import train_model, predict_7_days
+from india_map import create_india_weather_map
+from streamlit_folium import folium_static
 
 # ============================================
 # PAGE CONFIGURATION
@@ -608,14 +611,16 @@ if st.session_state.weather_data:
     w = st.session_state.weather_data
 
     # Main tabs
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-        "Current Weather",
-        "5-Day Forecast",
-        "Crop Advisory",
-        "Health & Safety",
-        "Vacation Planner",
-        "AI Chatbot"
-    ])
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
+    "Current Weather",
+    "5-Day Forecast",
+    "ML Prediction",
+    "India Map",
+    "Crop Advisory",
+    "Health & Safety",
+    "Vacation Planner",
+    "AI Chatbot"
+])
 
     # ==================
     # TAB 1: CURRENT WEATHER
@@ -808,11 +813,171 @@ if st.session_state.weather_data:
                 ),
                 use_container_width=True
             )
-
     # ==================
-    # TAB 3: CROP ADVISORY
+    # TAB 3: ML PREDICTION
     # ==================
     with tab3:
+        st.subheader(
+            f"ML Weather Prediction — {w['city']}")
+        st.caption(
+            "Random Forest model predicting "
+            "next 7 days temperature")
+
+        with st.spinner("Training ML model..."):
+            model, scaler, features = train_model()
+            predictions = predict_7_days(
+                w, model, scaler, features)
+
+        st.markdown("### 7-Day Temperature Forecast")
+
+        dates = [p['date'] for p in predictions]
+        temps = [p['predicted_temp']
+                 for p in predictions]
+
+        fig_ml = go.Figure()
+
+        fig_ml.add_trace(go.Scatter(
+            x=dates,
+            y=temps,
+            mode='lines+markers+text',
+            name='Predicted Temperature',
+            line=dict(color='#FF4500', width=3),
+            marker=dict(size=10),
+            text=[f"{t}C" for t in temps],
+            textposition='top center'
+        ))
+
+        fig_ml.add_hline(
+            y=w['temp'],
+            line_dash="dash",
+            line_color="blue",
+            annotation_text=f"Current: {w['temp']}C"
+        )
+
+        fig_ml.add_hline(
+            y=40,
+            line_dash="dot",
+            line_color="red",
+            annotation_text="Heat Wave 40C"
+        )
+
+        fig_ml.update_layout(
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(14,17,23,0.8)',
+            font_color='white',
+            title=f'7-Day ML Prediction — {w["city"]}',
+            xaxis_title='Date',
+            yaxis_title='Temperature (C)'
+        )
+
+        st.plotly_chart(fig_ml,
+                        use_container_width=True)
+
+        pred_df = pd.DataFrame(predictions)
+        st.markdown("### Detailed Predictions")
+        st.dataframe(
+            pred_df.style.background_gradient(
+                subset=['predicted_temp'],
+                cmap='RdYlBu_r'
+            ),
+            use_container_width=True
+        )
+
+        st.caption(
+            "Model: Random Forest Regressor | "
+            "Features: Month, Humidity, Wind, "
+            "Pressure, Cloud Cover | "
+            "El Nino factor: +15%")
+
+    # ==================
+    # TAB 4: INDIA MAP
+    # ==================
+    with tab4:
+        st.subheader("India Weather Map 2026")
+        st.caption(
+            "Interactive map — click any city "
+            "for detailed weather info")
+
+        map_data = {
+            'City': ['Hyderabad', 'Bangalore',
+                     'Chennai', 'Kochi', 'Delhi',
+                     'Mumbai', 'Kolkata', 'Jaipur',
+                     'Agra', 'Manali', 'Darjeeling',
+                     'Guwahati', 'Bhopal', 'Pune',
+                     'Ahmedabad', 'Visakhapatnam',
+                     'Lucknow', 'Chandigarh',
+                     'Jodhpur', 'Shimla',
+                     'Srinagar', 'Patna',
+                     'Bhubaneswar', 'Nagpur',
+                     'Indore', 'Raipur', 'Ranchi',
+                     'Imphal', 'Shillong', 'Aizawl'],
+            'Temperature': [37.2, 32.1, 38.5, 31.2,
+                            41.5, 34.0, 36.5, 42.8,
+                            44.2, 37.7, 16.3, 32.5,
+                            38.9, 35.8, 41.2, 36.8,
+                            40.2, 38.9, 43.1, 28.5,
+                            29.8, 38.2, 37.8, 39.8,
+                            39.5, 37.2, 35.2, 24.5,
+                            22.4, 19.8],
+            'Humidity': [36, 52, 68, 78, 46, 59,
+                         65, 22, 8, 46, 50, 75,
+                         35, 45, 28, 55, 35, 28,
+                         18, 45, 55, 42, 70, 32,
+                         28, 48, 55, 68, 72, 94],
+            'Condition': ['Few Clouds', 'Partly Cloudy',
+                          'Clear Sky', 'Scattered Clouds',
+                          'Haze', 'Haze',
+                          'Partly Cloudy', 'Clear Sky',
+                          'Clear Sky', 'Broken Clouds',
+                          'Clear Sky', 'Scattered Clouds',
+                          'Clear Sky', 'Scattered Clouds',
+                          'Haze', 'Clear Sky',
+                          'Haze', 'Few Clouds',
+                          'Clear Sky', 'Clear Sky',
+                          'Few Clouds', 'Clear Sky',
+                          'Scattered Clouds', 'Clear Sky',
+                          'Haze', 'Clear Sky',
+                          'Scattered Clouds', 'Partly Cloudy',
+                          'Scattered Clouds', 'Overcast'],
+            'El_Nino_Deviation': [8.7, 3.6, 10.0, 2.7,
+                                   13.0, 5.5, 8.0, 14.3,
+                                   15.7, 9.2, -12.2, 4.0,
+                                   10.4, 7.3, 12.7, 8.3,
+                                   11.7, 10.4, 14.6, 0.0,
+                                   1.3, 9.7, 9.3, 11.3,
+                                   11.0, 8.7, 6.7, -4.0,
+                                   -6.1, -8.7]
+        }
+
+        map_df = pd.DataFrame(map_data)
+        india_map = create_india_weather_map(map_df)
+        folium_static(india_map,
+                      width=900, height=600)
+
+        st.markdown("---")
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Cities Mapped", "30")
+        with col2:
+            avg_temp = sum(
+                map_data['Temperature'])/len(
+                map_data['Temperature'])
+            st.metric("Avg Temperature",
+                      f"{avg_temp:.1f}C")
+        with col3:
+            extreme = sum(
+                1 for t in map_data['Temperature']
+                if t > 40)
+            st.metric("Extreme Heat Cities",
+                      str(extreme))
+        with col4:
+            st.metric("El Nino Impact",
+                      "+6.4C above normal")
+
+    # ==================
+    # TAB 5: CROP ADVISORY
+    # ==================
+    with tab5:
         st.subheader(f"Crop Advisory — {w['city']}")
         st.caption(
             f"Based on: {w['temp']}C, "
@@ -850,9 +1015,9 @@ if st.session_state.weather_data:
             )
 
     # ==================
-    # TAB 4: HEALTH & SAFETY
+    # TAB 6: HEALTH & SAFETY
     # ==================
-    with tab4:
+    with tab6:
         st.subheader(f"Health & Safety — {w['city']}")
 
         level, color, precautions, foods = \
@@ -886,9 +1051,9 @@ if st.session_state.weather_data:
                     st.success(f)
 
     # ==================
-    # TAB 5: VACATION PLANNER
+    # TAB 7: VACATION PLANNER
     # ==================
-    with tab5:
+    with tab7:
         st.subheader("Vacation Recommendations")
         st.caption(
             f"Based on current weather in {w['city']}: "
@@ -912,9 +1077,9 @@ if st.session_state.weather_data:
             st.markdown("")
 
     # ==================
-    # TAB 6: AI CHATBOT
+    # TAB 8: AI CHATBOT
     # ==================
-    with tab6:
+    with tab8:
         st.subheader("India Weather AI Chatbot")
         st.caption(
             "Ask me anything about weather, "
